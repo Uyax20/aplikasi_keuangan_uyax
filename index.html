@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buku Ku</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>💰 Buku Ku</h1>
+      <div style="font-size:12px;opacity:0.85;margin-top:4px;">Zero-based budgeting</div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="ai">⚡ Input Cepat</button>
+      <button class="tab" data-tab="budget">💰 Budget</button>
+      <button class="tab" data-tab="transaksi">📝 Riwayat</button>
+      <button class="tab" data-tab="laporan">📊 Laporan</button>
+      <button class="tab" data-tab="pengaturan">⚙️ Setelan</button>
+    </nav>
+
+    <main class="content">
+      <!-- Tab AI Input -->
+      <section id="tab-ai" class="tab-panel active">
+        <div class="card" id="ai-input-section" style="border-top: 4px solid var(--primary);">
+          <h3 style="font-size:16px;margin-bottom:8px;text-align:center;">Mau catat apa hari ini?</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;text-align:center;">Ketik, ucapkan, atau foto struk belanjamu.</p>
+          
+          <div class="form-group">
+            <textarea id="ai-text" rows="3" placeholder="Contoh: Beli kopi 20rb, makan siang 50rb" style="width:100%;padding:14px;border:1.5px solid var(--border);border-radius:12px;font-family:inherit;font-size:15px;resize:vertical;"></textarea>
+          </div>
+          
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button type="button" class="btn" id="btn-mic" style="background:#f1f5f9;color:var(--text);flex:1;font-size:13px;" onclick="toggleVoice()">
+              🎤 <span id="mic-text">Rekam</span>
+            </button>
+            <label class="btn" style="background:#f1f5f9;color:var(--text);flex:1;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;">
+              📷 <span>Foto Struk</span>
+              <input type="file" id="ai-image" accept="image/*" style="display:none;" onchange="handleImage(this)">
+            </label>
+          </div>
+          
+          <div id="image-preview" style="display:none;text-align:center;margin-bottom:16px;">
+            <img id="img-preview" style="max-height:150px;border-radius:8px;box-shadow:var(--shadow);">
+            <button type="button" class="hapus" style="display:block;margin:8px auto 0;" onclick="clearImage()">Hapus Gambar</button>
+          </div>
+
+          <button class="btn btn-primary" id="btn-ai-submit" onclick="submitAI()" style="padding: 16px; font-size: 15px;">Proses dengan AI 🚀</button>
+          <div id="ai-status" style="display:none;text-align:center;margin-top:12px;font-size:13px;color:var(--primary);font-weight:600;"></div>
+        </div>
+
+        <div class="card" id="ai-review-section" style="display:none; border: 2px solid var(--primary);">
+          <h3 style="font-size:14px;margin-bottom:4px;color:var(--primary);">🔍 Review Hasil AI</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Periksa dan edit jika ada yang salah sebelum disimpan.</p>
+          <div id="review-list"></div>
+          <div style="display:flex; gap:8px; margin-top:16px;">
+            <button class="btn" style="background:#f1f5f9; color:var(--text);" onclick="batalAIReview()">Batal</button>
+            <button class="btn btn-primary" onclick="simpanAIReview()">✅ Simpan Semua</button>
+          </div>
+        </div>
+
+        <div style="text-align:center; margin-top: 24px; margin-bottom: 24px;">
+          <button class="btn" style="background: transparent; color: var(--primary); font-size: 13px; text-decoration: underline;" onclick="switchTab('budget')">
+            Lihat Pembukuan Lengkap 📊
+          </button>
+        </div>
+      </section>
+
+      <!-- Tab Budget -->
+      <section id="tab-budget" class="tab-panel">
+        <div class="saldo-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <button class="nav-btn" onclick="navMonth(-1)">←</button>
+            <div style="text-align:center;flex:1;">
+              <div class="label">Ready to Assign</div>
+              <div class="amount" id="rta-amount">Rp 0</div>
+              <div style="font-size:11px;opacity:0.85;margin-top:6px;" id="budget-month-label"></div>
+            </div>
+            <button class="nav-btn" onclick="navMonth(1)">→</button>
+          </div>
+        </div>
+        <div id="budget-content"></div>
+      </section>
+
+      <!-- Tab Transaksi -->
+      <section id="tab-transaksi" class="tab-panel">
+        <div class="card" id="form-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:14px;" id="form-title">➕ Tambah Manual</h3>
+            <button id="btn-cancel-edit" style="display:none;background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;" onclick="cancelEdit()">Batal Edit</button>
+          </div>
+          <form id="formTransaksi">
+            <div class="tipe-toggle">
+              <button type="button" class="tipe-btn active expense" data-tipe="outflow" onclick="setTipe('outflow')">💸 Pengeluaran</button>
+              <button type="button" class="tipe-btn income" data-tipe="inflow" onclick="setTipe('inflow')">💵 Pemasukan</button>
+            </div>
+            <div class="form-group"><label>Nominal</label><input type="number" id="f-nominal" placeholder="50000" required></div>
+            <div class="form-group" id="f-kategori-wrap"><label>Kategori</label><select id="f-kategori"></select></div>
+            <div class="form-group"><label>Tanggal</label><input type="date" id="f-tanggal" required></div>
+            <div class="form-group"><label>Catatan (opsional)</label><input type="text" id="f-catatan" placeholder="Makan siang"></div>
+            <button type="submit" class="btn btn-primary" id="btn-submit">💾 Simpan</button>
+          </form>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h3 style="font-size:14px;">📋 Riwayat</h3>
+            <input type="month" id="filter-month" style="width:auto;padding:6px 8px;font-size:12px;border-radius:8px;">
+          </div>
+          <div id="trans-list"></div>
+        </div>
+      </section>
+
+      <!-- Tab Laporan -->
+      <section id="tab-laporan" class="tab-panel">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="font-size:14px;">📊 Laporan</h3>
+            <input type="month" id="laporan-month" style="width:auto;padding:6px 8px;font-size:12px;border-radius:8px;">
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="font-size:14px;margin-bottom:12px;">🥧 Pengeluaran per Kategori</h3>
+          <div class="chart-container"><canvas id="chart-pie"></canvas></div>
+        </div>
+        <div class="card">
+          <h3 style="font-size:14px;margin-bottom:12px;">📈 Budget vs Aktual per Grup</h3>
+          <div class="chart-container"><canvas id="chart-bar"></canvas></div>
+        </div>
+        <div class="card">
+          <h3 style="font-size:14px;margin-bottom:12px;">📋 Detail per Kategori</h3>
+          <div id="laporan-list"></div>
+        </div>
+      </section>
+
+      <!-- Tab Pengaturan -->
+      <section id="tab-pengaturan" class="tab-panel">
+        <div class="card">
+          <h3 style="font-size:14px;margin-bottom:12px;">🏷️ Grup & Kategori</h3>
+          <div id="groups-list"></div>
+        </div>
+        <div class="card">
+          <h3 style="font-size:14px;margin-bottom:12px;">📤 Data</h3>
+          <button class="btn btn-primary" onclick="alert('Fitur export belum tersedia di Netlify')">Download CSV</button>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
